@@ -17,7 +17,7 @@ func (t Task) Run() (stdout string, stderr string, exitCode int) {
 
 	log.Println("run command:", t.Command)
 	var outbuf, errbuf bytes.Buffer
-	cmd := exec.Command("bash", "-c", t.Command)
+	cmd := exec.Command("sh", "-c", t.Command)
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 
