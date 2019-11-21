@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"github.com/robfig/cron/v3"
 	"log"
 	"os"
@@ -20,19 +22,20 @@ func main() {
 	failedRegisters := 0
 	c := cron.New()
 
-	for name, task := range config.Tasks {
+	for name := range config.Tasks {
+		task := config.Tasks[name]
+
 		id, err := c.AddFunc(task.Interval, func() {
 			task.Run()
 		})
 
 		if err != nil {
 			failedRegisters++
-			log.Fatalln(err)
+			log.Println(errors.New(fmt.Sprintf("failed to register task: %s", err.Error())))
 		} else {
 			log.Printf("Successfully registered task '%s' with interval '%s'; assigned id: %d", name, task.Interval, id)
 			successfulRegisters++
 		}
-
 	}
 
 	if len(config.Tasks) > 0 {
