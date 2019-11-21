@@ -6,9 +6,9 @@ description = "Used to backup the database using the sql dump command"
 [tasks]
 
   [tasks.test]
-  command = "docker fsdafe"
+  command = "docker fsdafe || exit 3"
   interval = "* * * * *"
 
-#  [tasks.test2]
-#  command = "docker dsgfsfd"
-#  interval = "00 10 * * *"
+  [tasks.test2]
+  command = "docker ps"
+  interval = "* * * * *"
