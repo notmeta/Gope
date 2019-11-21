@@ -24,5 +24,5 @@ func LoadConfig(filePath string) (conf *TaskConfig, err error) {
 	b, err := ioutil.ReadAll(file)
 	_, err = toml.Decode(string(b), &conf)
 
-	return conf, err
+	return
 }
