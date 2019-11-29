@@ -4,12 +4,18 @@ import (
 	"bytes"
 	"log"
 	"os/exec"
+	"strconv"
 	"syscall"
 )
 
 type Task struct {
 	Command  string
 	Interval string
+	OnExit   map[string]OnExit // key is actually an exit code int, don't be fooled
+}
+
+type OnExit struct {
+	Command string
 }
 
 // https://stackoverflow.com/a/40770011
@@ -45,6 +51,16 @@ func (t Task) Run() (stdout string, stderr string, exitCode int) {
 		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
 		exitCode = ws.ExitStatus()
 	}
-	log.Printf("command result, stdout: %v, stderr: %v, exitCode: %v", stdout, stderr, exitCode)
+	//log.Printf("command result, stdout: %v, stderr: %v, exitCode: %v", stdout, stderr, exitCode)
 	return
+}
+
+func (t Task) FindOnExit(code int) *OnExit {
+	codeStr := strconv.Itoa(code)
+
+	if val, ok := t.OnExit[codeStr]; ok {
+		return &val
+	}
+
+	return nil
 }

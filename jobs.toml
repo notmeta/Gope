@@ -9,6 +9,12 @@ description = "Used to backup the database using the sql dump command"
   command = "docker fsdafe || exit 3"
   interval = "* * * * *"
 
+    [tasks.test.onexit.0]
+    command = "echo nothing to report"
+
+    [tasks.test.onexit.3]
+    command = "echo help, I just exited incorrectly!"
+
   [tasks.test2]
   command = "docker ps"
   interval = "* * * * *"

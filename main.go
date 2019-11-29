@@ -21,6 +21,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Printf("Initialising Gope for %s", config.Title)
+	log.Printf("Description: %s", config.Description)
+
 	RegisterTasks(config)
 
 	if len(config.Tasks) > 0 {
@@ -42,10 +45,22 @@ func RegisterTasks(config *TaskConfig) {
 	failedRegisters := 0
 
 	for name := range config.Tasks {
+		taskName := name
 		task := config.Tasks[name]
 
 		id, err := Scheduler.AddFunc(task.Interval, func() {
-			task.Run()
+			_, _, exit := task.Run()
+
+			log.Printf("Task %s finished with code %d, finding on_exit method", taskName, exit)
+
+			onExit := task.FindOnExit(exit)
+
+			if onExit != nil {
+				log.Printf("on_exit command: %s", task.FindOnExit(exit).Command)
+			} else {
+				log.Printf("No on_exit found")
+			}
+
 		})
 
 		if err != nil {
