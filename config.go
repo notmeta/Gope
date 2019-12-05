@@ -7,9 +7,10 @@ import (
 )
 
 type TaskConfig struct {
-	Title       string
-	Description string
-	Tasks       map[string]Task
+	Title         string
+	Description   string
+	Tasks         map[string]Task
+	PrintOnFinish bool
 }
 
 func LoadConfig(filePath string) (conf *TaskConfig, err error) {

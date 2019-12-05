@@ -10,23 +10,25 @@ import (
 	"syscall"
 )
 
-var Scheduler = cron.New()
+var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
+var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
+var Config *TaskConfig
 
 func main() {
 	defer Scheduler.Stop()
 
-	config, err := LoadConfig("jobs.toml")
-
-	if err != nil {
+	if config, err := LoadConfig("jobs.toml"); err != nil {
 		log.Fatal(err)
+	} else {
+		Config = config
 	}
 
-	log.Printf("Initialising Gope for %s", config.Title)
-	log.Printf("Description: %s", config.Description)
+	log.Printf("Initialising Gope for %s", Config.Title)
+	log.Printf("Description: %s", Config.Description)
 
-	RegisterTasks(config)
+	RegisterTasks(Config)
 
-	if len(config.Tasks) > 0 {
+	if len(Config.Tasks) > 0 {
 		Scheduler.Start()
 	} else {
 		log.Println("No tasks to register, holding off starting the Scheduler")
@@ -49,18 +51,7 @@ func RegisterTasks(config *TaskConfig) {
 		task := config.Tasks[name]
 
 		id, err := Scheduler.AddFunc(task.Interval, func() {
-			_, _, exit := task.Run()
-
-			log.Printf("Task %s finished with code %d, finding on_exit method", taskName, exit)
-
-			onExit := task.FindOnExit(exit)
-
-			if onExit != nil {
-				log.Printf("on_exit command: %s", task.FindOnExit(exit).Command)
-			} else {
-				log.Printf("No on_exit found")
-			}
-
+			task.Execute(taskName)
 		})
 
 		if err != nil {
