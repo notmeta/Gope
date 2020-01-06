@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/robfig/cron/v3"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -15,6 +16,9 @@ var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
 var Config *TaskConfig
 
 func main() {
+	logFile := initialiseLogger()
+	defer logFile.Close()
+
 	defer Scheduler.Stop()
 
 	if config, err := LoadConfig("jobs.toml"); err != nil {
@@ -40,6 +44,18 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
+}
+
+func initialiseLogger() (file *os.File) {
+	file, err := os.OpenFile("gope.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mw := io.MultiWriter(os.Stdout, file)
+	log.SetOutput(mw)
+
+	return
 }
 
 func RegisterTasks(config *TaskConfig) {
