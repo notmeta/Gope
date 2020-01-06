@@ -25,6 +25,7 @@ type Retry struct {
 
 type OnExit struct {
 	Command string
+	Log     string
 	OnRetry OnRetry
 }
 
@@ -52,15 +53,13 @@ func (t Task) Execute(taskName string) {
 	onExit := t.FindOnExit(exit)
 
 	if onExit != nil {
-		log.Printf("Running on_exit command for %s; exit code: %d", taskName, exit)
-		stdout, stderr, _ := ExecuteCommand(onExit.Command)
-
-		if len(stdout) > 0 {
-			log.Printf("stdout: %s", stdout)
+		if onExit.Command != "" {
+			log.Printf("Running on_exit command for %s; exit code: %d", taskName, exit)
+			_, _, _ = ExecuteCommand(onExit.Command)
 		}
 
-		if len(stderr) > 0 {
-			log.Printf("stderr: %s", stderr)
+		if onExit.Log != "" { // if there is a log statement
+			log.Printf("'%s' onexit (%d) log: %s", taskName, exit, onExit.Log)
 		}
 	}
 }

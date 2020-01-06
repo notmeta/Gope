@@ -5,7 +5,7 @@ printOnFinish = false
 [tasks]
 
   [tasks.test]
-  command = "docker fsdafe"
+  command = "docker ps"
   interval = "* * * * *"
   timeout = 120
 
@@ -17,7 +17,7 @@ printOnFinish = false
     backoff = 1.1
 
     [tasks.test.onexit.0]
-    command = "echo nothing to report"
+    log = "Nothing to report"
 
     [tasks.test.onexit.1]
     command = "echo invalid command!"
