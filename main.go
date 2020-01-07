@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/robfig/cron/v3"
+	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,6 +31,8 @@ func main() {
 
 	log.Printf("Initialising Gope for %s", Config.Title)
 	log.Printf("Description: %s", Config.Description)
+
+	go panel()
 
 	RegisterTasks(Config)
 
@@ -81,4 +85,12 @@ func RegisterTasks(config *TaskConfig) {
 
 	log.Printf("%d task(s) registered.\n", successfulRegisters)
 	log.Printf("%d task(s) failed to register.\n", failedRegisters)
+}
+
+func panel() {
+	tmpl := template.Must(template.ParseFiles("ui/index.html"))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		tmpl.Execute(w, Config)
+	})
+	http.ListenAndServe(":8080", nil)
 }

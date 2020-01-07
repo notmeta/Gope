@@ -1,0 +1,7 @@
+<h1>{{.Title}}</h1>
+<p><i>{{.Description}}</i></p>
+<ul>
+    {{range $key, $value := .Tasks}}
+        <li>{{$key}} - {{$value.Command}}</li>
+    {{end}}
+</ul>
