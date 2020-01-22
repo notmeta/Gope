@@ -8,11 +8,13 @@ import (
 )
 
 type Task struct {
-	Command  string
-	Interval string
-	Timeout  int
-	Retry    Retry
-	OnExit   map[string]OnExit // key is actually an exit code int, don't be fooled
+	Command      string
+	Interval     string
+	Timeout      int
+	Retry        Retry
+	OnExit       map[string]OnExit // key is actually an exit code int, don't be fooled
+	LastRunTime  *time.Time
+	LastExitCode int
 }
 
 type Retry struct {
@@ -41,8 +43,8 @@ func (t Task) FindOnExit(code int) *OnExit {
 	return nil
 }
 
-func (t Task) Execute(taskName string) {
-	_, _, exit := ExecuteCommand(t.Command)
+func (t Task) Execute(taskName string) (exit int) {
+	_, _, exit = ExecuteCommand(t.Command)
 
 	if Config.PrintOnFinish {
 		log.Printf("Task %s finished with code %d, executing on_exit method", taskName, exit)
@@ -62,6 +64,8 @@ func (t Task) Execute(taskName string) {
 			log.Printf("'%s' onexit (%d) log: %s", taskName, exit, onExit.Log)
 		}
 	}
+
+	return
 }
 
 func (t Task) shouldRetry(exit int) bool {

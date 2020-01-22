@@ -72,9 +72,19 @@ func RegisterTasks(config *TaskConfig) {
 	for name := range config.Tasks {
 		taskName := name
 		task := config.Tasks[name]
+		task.LastExitCode = -1
+
+		config.Tasks[name] = task
 
 		id, err := Scheduler.AddFunc(task.Interval, func() {
-			task.Execute(taskName)
+			exit := task.Execute(taskName)
+
+			task.LastExitCode = exit
+
+			newTime := time.Now()
+			task.LastRunTime = &newTime
+
+			config.Tasks[taskName] = task
 		})
 
 		if err != nil {

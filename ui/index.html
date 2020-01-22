@@ -13,6 +13,8 @@
         <th>Name</th>
         <th>Command</th>
         <th>Interval</th>
+        <th>Last executed</th>
+        <th>Last exit code</th>
     </tr>
     </thead>
     <tbody>
@@ -22,6 +24,14 @@
             <td>{{$key}}</td>
             <td><code>{{$value.Command}}</code></td>
             <td><code>{{$value.Interval}}</code></td>
+            <td>
+                {{if not $value.LastRunTime}}
+                    <i>Never</i>
+                {{else}}
+                    {{$value.LastRunTime.Format "2 Jan 2006 15:04:05"}}
+                {{end}}
+            </td>
+            <td>{{$value.LastExitCode}}</td>
         </tr>
     {{end}}
 
