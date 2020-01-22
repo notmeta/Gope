@@ -1,7 +1,31 @@
-<h1>{{.Title}}</h1>
-<p><i>{{.Description}}</i></p>
-<ul>
-    {{range $key, $value := .Tasks}}
-        <li>{{$key}} - {{$value.Command}}</li>
+{{template "header"}}
+
+<h1>{{.config.Title}}</h1>
+<blockquote>{{.config.Description}}</blockquote>
+
+<br>
+
+<h2>Jobs</h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Command</th>
+        <th>Interval</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    {{range $key, $value := .config.Tasks}}
+        <tr>
+            <td>{{$key}}</td>
+            <td><code>{{$value.Command}}</code></td>
+            <td><code>{{$value.Interval}}</code></td>
+        </tr>
     {{end}}
-</ul>
+
+    </tbody>
+</table>
+
+{{template "footer" . }}

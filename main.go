@@ -6,11 +6,14 @@ import (
 	"github.com/robfig/cron/v3"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 )
 
 var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
@@ -88,9 +91,29 @@ func RegisterTasks(config *TaskConfig) {
 }
 
 func panel() {
-	tmpl := template.Must(template.ParseFiles("ui/index.html"))
+	var allFiles []string
+	files, err := ioutil.ReadDir("./ui")
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, file := range files {
+		filename := file.Name()
+		if strings.HasSuffix(filename, ".html") {
+			allFiles = append(allFiles, "./ui/"+filename)
+		}
+	}
+
+	templates := template.Must(template.ParseFiles(allFiles...))
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, Config)
+		err := templates.ExecuteTemplate(w, "index.html", template.FuncMap{
+			"time":   time.Now(),
+			"config": Config,
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
 	})
+
 	http.ListenAndServe(":8080", nil)
 }
