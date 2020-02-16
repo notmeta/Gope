@@ -44,7 +44,7 @@ func (t Task) FindOnExit(code int) *OnExit {
 }
 
 func (t Task) Execute(taskName string) (exit int) {
-	_, _, exit = ExecuteCommand(t.Command)
+	_, _, exit = ExecuteCommand(t.Command, t.Timeout)
 
 	if Config.PrintOnFinish {
 		log.Printf("Task %s finished with code %d, executing on_exit method", taskName, exit)
@@ -57,7 +57,7 @@ func (t Task) Execute(taskName string) (exit int) {
 	if onExit != nil {
 		if onExit.Command != "" {
 			log.Printf("Running on_exit command for %s; exit code: %d", taskName, exit)
-			_, _, _ = ExecuteCommand(onExit.Command)
+			_, _, _ = ExecuteCommand(onExit.Command, 0)
 		}
 
 		if onExit.Log != "" { // if there is a log statement
@@ -86,7 +86,7 @@ func (t Task) handleRetry(initialExit int) {
 	for i := 0; i < t.Retry.Tries; i++ {
 		log.Printf("Waiting %f seconds to retry", timeout)
 		time.Sleep(time.Millisecond * time.Duration(timeout*1000))
-		_, _, exit = ExecuteCommand(t.Command)
+		_, _, exit = ExecuteCommand(t.Command, t.Timeout)
 
 		if !t.shouldRetry(exit) {
 			break
