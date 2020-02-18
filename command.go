@@ -11,25 +11,27 @@ import (
 // https://stackoverflow.com/a/40770011
 func ExecuteCommand(command string, timeout int) (stdout string, stderr string, exitCode int) {
 	var outbuf, errbuf bytes.Buffer
+
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 
-	var ch = make(chan struct{}, 1)
+	var fin = make(chan struct{}, 1)
 
 	if timeout > 0 {
 		go func() {
-			log.Printf("waiting %d seconds for timeout\n", timeout)
-			time.Sleep(time.Duration(timeout) * time.Second)
-
 			select {
-			case _ = <-ch:
-				log.Println("command already finished, exiting")
-			default:
-				log.Println("command not finished, terminating")
+
+			// wait for timeout channel
+			case <-time.After(time.Duration(timeout) * time.Second):
+				log.Println("command timed out, killing process")
 				if err := cmd.Process.Kill(); err != nil {
 					log.Println(err)
 				}
+
+			// command has finished - exit
+			case <-fin:
+				return
 			}
 		}()
 	}
@@ -38,7 +40,7 @@ func ExecuteCommand(command string, timeout int) (stdout string, stderr string, 
 	stdout = outbuf.String()
 	stderr = errbuf.String()
 
-	ch <- struct{}{}
+	fin <- struct{}{} // tell the channel we've finished so the timeout routine can exit
 
 	if err != nil {
 		// try to get the exit code
