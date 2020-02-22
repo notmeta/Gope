@@ -5,18 +5,42 @@ import (
 	"log"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
 // https://stackoverflow.com/a/40770011
-func ExecuteCommand(command string) (stdout string, stderr string, exitCode int) {
+func ExecuteCommand(command string, timeout int) (stdout string, stderr string, exitCode int) {
 	var outbuf, errbuf bytes.Buffer
+
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 
-	err := cmd.Run()
+	var fin = make(chan struct{}, 1)
+
+	if timeout > 0 {
+		go func() {
+			select {
+
+			// wait for timeout channel
+			case <-time.After(time.Duration(timeout) * time.Second):
+				log.Println("command timed out, killing process")
+				if err := cmd.Process.Kill(); err != nil {
+					log.Println(err)
+				}
+
+			// command has finished - exit
+			case <-fin:
+				return
+			}
+		}()
+	}
+
+	err := cmd.Run() // .Run waits for the process to finish
 	stdout = outbuf.String()
 	stderr = errbuf.String()
+
+	fin <- struct{}{} // tell the channel we've finished so the timeout routine can exit
 
 	if err != nil {
 		// try to get the exit code
@@ -39,5 +63,6 @@ func ExecuteCommand(command string) (stdout string, stderr string, exitCode int)
 		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
 		exitCode = ws.ExitStatus()
 	}
+
 	return
 }
