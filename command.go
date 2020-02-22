@@ -20,17 +20,15 @@ func ExecuteCommand(command string, timeout int) (stdout string, stderr string, 
 
 	if timeout > 0 {
 		go func() {
+			t := time.NewTimer(time.Duration(timeout) * time.Second)
 			select {
-
-			// wait for timeout channel
-			case <-time.After(time.Duration(timeout) * time.Second):
+			case <-t.C: // wait for timeout channel
 				log.Println("command timed out, killing process")
 				if err := cmd.Process.Kill(); err != nil {
 					log.Println(err)
 				}
-
-			// command has finished - exit
-			case <-fin:
+			case <-fin: // command has finished - exit
+				t.Stop() // stop our timer to patch any leaks
 				return
 			}
 		}()
