@@ -12,10 +12,10 @@ import (
 
 type CallableWebhook struct {
 	Name    string
-	Webhook Webhook
+	Webhook webhook
 }
 
-type Webhook struct {
+type webhook struct {
 	Url         string
 	Payload     string
 	ContentType string `toml:"content-type"`
