@@ -5,34 +5,33 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 )
 
+type CallableWebhook struct {
+	Name    string
+	Webhook Webhook
+}
+
 type Webhook struct {
-	Url     string
-	Payload string
+	Url         string
+	Payload     string
+	ContentType string `toml:"content-type"`
 }
 
-func sendtest() {
-	wh, err := decode()
+func (wh CallableWebhook) execute() {
+	log.Printf("executing webhook '%s'\n", wh.Name)
+
+	_, err := http.Post(wh.Webhook.Url, wh.Webhook.ContentType, bytes.NewBuffer([]byte(wh.Webhook.Payload)))
 
 	if err != nil {
 		fmt.Println(err)
-		return
 	}
-
-	_, err = http.Post(wh.Url, "application/json", bytes.NewBuffer([]byte(wh.Payload)))
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	return
 }
 
-func decode() (wh *Webhook, err error) {
+func decode() (wh *CallableWebhook, err error) {
 	file, err := os.Open("webhook.toml")
 
 	if err != nil {
