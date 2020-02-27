@@ -16,24 +16,9 @@ import (
 	"time"
 )
 
-var Scheduler = cron.New(cron.WithChain(SkipIfStillRunning()))
+var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
+var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
 var Config *TaskConfig
-
-func SkipIfStillRunning() cron.JobWrapper {
-	var ch = make(chan struct{}, 1)
-	ch <- struct{}{}
-	return func(j cron.Job) cron.Job {
-		return cron.FuncJob(func() {
-			select {
-			case v := <-ch:
-				ch <- v
-				j.Run()
-			default:
-				log.Println("skip")
-			}
-		})
-	}
-}
 
 func main() {
 	logFile := initialiseLogger()
