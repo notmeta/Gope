@@ -10,9 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -20,38 +18,38 @@ var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
 var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
 var Config *TaskConfig
 
-func main() {
-	logFile := initialiseLogger()
-	defer logFile.Close()
-
-	defer Scheduler.Stop()
-
-	if config, err := LoadConfig("jobs.toml"); err != nil {
-		log.Fatal(err)
-	} else {
-		Config = config
-	}
-
-	log.Printf("Initialising Gope for %s", Config.Title)
-	log.Printf("Description: %s", Config.Description)
-
-	go panel()
-
-	RegisterTasks(Config)
-
-	if len(Config.Tasks) > 0 {
-		Scheduler.Start()
-	} else {
-		log.Println("No tasks to register, holding off starting the Scheduler")
-	}
-
-	// Wait for a CTRL-C
-	log.Printf(`Now running. Press CTRL-C to exit.`)
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-
-}
+//func main() {
+//	logFile := initialiseLogger()
+//	defer logFile.Close()
+//
+//	defer Scheduler.Stop()
+//
+//	if config, err := LoadConfig("jobs.toml"); err != nil {
+//		log.Fatal(err)
+//	} else {
+//		Config = config
+//	}
+//
+//	log.Printf("Initialising Gope for %s", Config.Title)
+//	log.Printf("Description: %s", Config.Description)
+//
+//	go panel()
+//
+//	RegisterTasks(Config)
+//
+//	if len(Config.Tasks) > 0 {
+//		Scheduler.Start()
+//	} else {
+//		log.Println("No tasks to register, holding off starting the Scheduler")
+//	}
+//
+//	// Wait for a CTRL-C
+//	log.Printf(`Now running. Press CTRL-C to exit.`)
+//	sc := make(chan os.Signal, 1)
+//	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+//	<-sc
+//
+//}
 
 func initialiseLogger() (file *os.File) {
 	file, err := os.OpenFile("gope.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)

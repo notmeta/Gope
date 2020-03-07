@@ -1,0 +1,86 @@
+title = "Database backup"
+description = "Used to backup the database using the sql dump command"
+entry = "check space"
+
+[[job]]
+name = "check space"
+command = "df"
+timeout = 20
+
+on.timeout.code = 3 # not in diagram
+
+on.3.name = "clear disk space"
+on.3.retry.tries = 5
+on.3.retry.then = "disk space email"
+
+on.0.name = "check connection"
+on.default.name = "some job"
+
+
+[[job]]
+name = "clear disk space"
+command = "rm -r /etc/somedir/logs"
+timeout = 20
+
+[[job]]
+name = "disk space email"
+email.recipient = "devops@e-corp.com"
+email.subject = "Error in job"
+email.body = "Failed to clean up enough disk space"
+
+
+[[job]]
+name = "check connection"
+command = "ping 8.8.8.8"
+timeout = 10
+
+on.0.name = "dump mysql"
+on.3.name = "no internet email"
+
+[[job]]
+name = "no internet email"
+email.recipient = "devops@e-corp.com"
+email.subject = "No internet connection!"
+email.body = "Fix me"
+
+
+[[job]]
+name = "dump mysql"
+command = "mysqldump -u root test > test.sql"
+timeout = 180
+
+# TODO on.timeout
+
+on.unknown.name = "mysql dump email"
+on.0.name = "upload dump"
+on.0.retry.tries = 5
+on.0.retry.then = "upload fail email"
+
+[[job]]
+name = "mysql dump email"
+email.recipient = "devops@e-corp.com"
+email.subject = "Faild to dump mysql db"
+email.body = """
+mysqldump failed with code ${{code}}
+
+${{stdout}}
+
+${{stderr}}
+"""
+webhook.name = "sdfg"
+
+
+[[job]]
+name = "upload dump"
+command = "aws s3 put test.sql"
+timeout = 180
+
+[[job]]
+name = "upload fail email"
+email.recipient = "devops@e-corp.com"
+email.subject = "Faild to upload db dump"
+email.body = """
+failed to upload db dump to s3
+
+${{sterr}}
+"""
