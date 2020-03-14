@@ -21,6 +21,7 @@ on.default.name = "some job"
 name = "clear disk space"
 command = "rm -r /etc/somedir/logs"
 timeout = 20
+interval = "1 * * * *"
 
 [[job]]
 name = "disk space email"

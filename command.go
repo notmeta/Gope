@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// TODO create command output struct and use that instead of returning the below tuple
+// TODO use error to return timeout event
+
 // https://stackoverflow.com/a/40770011
 func ExecuteCommand(command string, timeout int) (stdout string, stderr string, exitCode int) {
 	var outbuf, errbuf bytes.Buffer

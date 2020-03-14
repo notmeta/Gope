@@ -6,83 +6,91 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
-
-type TaskConfig struct {
-	Title         string
-	Description   string
-	Tasks         map[string]Task
-	PrintOnFinish bool
-}
 
 type JobConfig struct {
 	Title       string
 	Description string
-	Job         []job
+	Jobs        []job `toml:"job"`
+
+	fileName string
 }
 
-type job struct {
-	Name    string
-	Command string
-	Log     string
-	Entry   bool
-	Timeout int
-	On      map[string]jobEvent
-}
+const configFileSuffix = ".toml"
 
-type jobEvent struct {
-	Name  string
-	Code  int
-	Retry jobRetry
-}
+func LoadConfig() {
+	err := filepath.Walk("jobs", func(path string, info os.FileInfo, err error) error {
 
-type jobRetry struct {
-	Tries int
-	Then  string
-}
+		if err != nil {
+			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+			return err
+		}
 
-const (
-	Unknown = "unknown"
-	Timeout = "timeout"
-	Default = "default"
-)
+		if !info.IsDir() && strings.HasSuffix(path, configFileSuffix) {
+			log.Printf("loading config file %q\n", path)
 
-func main() {
-	file, err := os.Open("jobs_new.toml")
+			file, err := os.Open(path)
+
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			cfg, err := loadConfigFile(file)
+			if err != nil {
+				return err
+			}
+
+			// store a map of jobs from this file to lookup after
+			jobs := make(map[string]job, len(cfg.Jobs))
+			for _, j := range cfg.Jobs {
+				if !strings.EqualFold(j.Interval, "") {
+					log.Printf("found job %q with interval %q", j.Name, j.Interval)
+				}
+				jobs[j.Name] = j
+			}
+
+			// iterate jobs again and assign job pointer in each job event to preloaded job structs
+			for _, j := range cfg.Jobs {
+				for on, event := range j.On { // TODO handle timeout, unknown, default
+					if val, ok := jobs[event.Name]; ok {
+						event.job = &val
+					} else {
+						log.Printf("on event %q: could not find job named %q\n", on, event.Name)
+					}
+				}
+			}
+
+			Config = append(Config, cfg)
+		}
+
+		return nil
+	})
 
 	if err != nil {
-		return
-	}
-
-	defer file.Close()
-
-	b, err := ioutil.ReadAll(file)
-
-	var config JobConfig
-	if err := toml.Unmarshal(b, &config); err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(config.Job[0].On["3"].Name)
-
-	for _, s := range config.Job {
-		log.Println(s)
-		fmt.Printf("%s\n", s.Name)
+	log.Printf("%d files loaded:\n", len(Config))
+	for _, s := range Config {
+		log.Printf("%s %q - %s\n", s.fileName, s.Title, s.Description)
 	}
 
 }
 
-//func LoadConfig(filePath string) (conf *TaskConfig, err error) {
-//	file, err := os.Open(filePath)
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	defer file.Close()
-//
-//	b, err := ioutil.ReadAll(file)
-//	_, err = toml.Decode(string(b), &conf)
-//
-//	return
-//}
+func loadConfigFile(file *os.File) (cfg *JobConfig, err error) {
+	var config JobConfig
+
+	b, _ := ioutil.ReadAll(file)
+
+	if err := toml.Unmarshal(b, &config); err != nil {
+		log.Fatal(err)
+		return cfg, err
+	}
+
+	config.fileName = file.Name()
+
+	return &config, nil
+}

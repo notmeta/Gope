@@ -46,9 +46,9 @@ func (t Task) FindOnExit(code int) *OnExit {
 func (t Task) Execute(taskName string) (exit int) {
 	_, _, exit = ExecuteCommand(t.Command, t.Timeout)
 
-	if Config.PrintOnFinish {
-		log.Printf("Task %s finished with code %d, executing on_exit method", taskName, exit)
-	}
+	//if Config.PrintOnFinish {
+	//	log.Printf("Task %s finished with code %d, executing on_exit method", taskName, exit)
+	//}
 
 	t.handleRetry(exit)
 
