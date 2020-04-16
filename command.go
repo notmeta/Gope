@@ -20,7 +20,7 @@ type TimeoutError struct {
 	timeoutDuration int
 }
 
-func (e TimeoutError) Error() string {
+func (e *TimeoutError) Error() string {
 	return fmt.Sprintf("gope timeout: command %q timed out with duration of %d", e.command, e.timeoutDuration)
 }
 
@@ -44,7 +44,7 @@ func ExecuteCommand(command string, timeout int) (out CommandOutput, err error) 
 				if err := cmd.Process.Kill(); err != nil {
 					log.Println(err)
 				}
-				timeoutChannel <- TimeoutError{command, timeout}
+				timeoutChannel <- &TimeoutError{command, timeout}
 			case <-fin: // command has finished - exit
 				t.Stop() // stop our timer to patch any leaks
 				return

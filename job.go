@@ -49,10 +49,12 @@ func (j Job) IsSchedulable() bool {
 }
 
 func (j Job) Execute() {
+	// log statement
 	if !strings.EqualFold(j.Log, "") {
 		log.Println(j.Log)
 	}
 
+	// command statement
 	if !strings.EqualFold(j.Command, "") {
 		output, err := ExecuteCommand(j.Command, j.Timeout)
 
