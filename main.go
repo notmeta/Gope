@@ -19,7 +19,6 @@ import (
 var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
 var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
 var Config []*JobConfig
-var CronJobs []Job
 
 func main() {
 	logFile := initialiseLogger()

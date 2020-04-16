@@ -76,7 +76,6 @@ func LoadConfig() {
 				}
 				if j.IsSchedulable() {
 					log.Printf("found Job %q with interval %q", j.Name, j.Interval)
-					CronJobs = append(CronJobs, j)
 				}
 			}
 
