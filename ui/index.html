@@ -1,41 +1,52 @@
 {{template "header"}}
 
-<h1>{{.config.Title}}</h1>
-<blockquote>{{.config.Description}}</blockquote>
+{{range $key, $value := .config}}
 
-<br>
+    <h1>{{$value.Title}}</h1>
+    <blockquote>{{$value.Description}}</blockquote>
 
-<h2>Jobs</h2>
+    <br>
 
-<table>
-    <thead>
-    <tr>
-        <th>Name</th>
-        <th>Command</th>
-        <th>Interval</th>
-        <th>Last executed</th>
-        <th>Last exit code</th>
-    </tr>
-    </thead>
-    <tbody>
+    <h2>Jobs</h2>
 
-    {{range $key, $value := .config.Tasks}}
+    <table>
+        <thead>
         <tr>
-            <td>{{$key}}</td>
-            <td><code>{{$value.Command}}</code></td>
-            <td><code>{{$value.Interval}}</code></td>
-            <td>
-                {{if not $value.LastRunTime}}
-                    <i>Never</i>
-                {{else}}
-                    {{$value.LastRunTime.Format "2 Jan 2006 15:04:05"}}
-                {{end}}
-            </td>
-            <td>{{$value.LastExitCode}}</td>
+            <th>Name</th>
+            <th>Command</th>
+            <th>Interval</th>
+            <th>Last executed</th>
+            <th>Last exit code</th>
         </tr>
-    {{end}}
+        </thead>
+        <tbody>
 
-    </tbody>
-</table>
+        {{range $jobName, $job := $value.Jobs}}
+            {{if $job.Interval}}
+
+                <tr>
+                    <td>{{$job.Name}}</td>
+                    <td><code>{{$job.Command}}</code></td>
+                    <td><code>{{$job.Interval}}</code></td>
+                    <td>
+                        {{if not $job.LastRunTime}}
+                            <i>Never</i>
+                        {{else}}
+                            {{$job.LastRunTime.Format "2 Jan 2006 15:04:05"}}
+                        {{end}}
+                    </td>
+                    <td>{{$job.LastExitCode}}</td>
+                    {{/*                    <td>-1</td>*/}}
+                </tr>
+
+            {{end}}
+        {{end}}
+
+        </tbody>
+    </table>
+
+    <br>
+
+{{end}}
 
 {{template "footer" . }}

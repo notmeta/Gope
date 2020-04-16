@@ -13,7 +13,7 @@ import (
 type JobConfig struct {
 	Title       string
 	Description string
-	Jobs        []job `toml:"job"`
+	Jobs        []Job `toml:"Job"`
 
 	fileName string
 }
@@ -43,23 +43,40 @@ func LoadConfig() {
 				return err
 			}
 
+			// populate
+
 			// store a map of jobs from this file to lookup after
-			jobs := make(map[string]job, len(cfg.Jobs))
+			jobs := make(map[string]Job, len(cfg.Jobs))
 			for _, j := range cfg.Jobs {
-				if !strings.EqualFold(j.Interval, "") {
-					log.Printf("found job %q with interval %q", j.Name, j.Interval)
-				}
 				jobs[j.Name] = j
 			}
 
-			// iterate jobs again and assign job pointer in each job event to preloaded job structs
+			// iterate jobs again and assign Job pointer in each Job event to preloaded Job structs
 			for _, j := range cfg.Jobs {
 				for on, event := range j.On { // TODO handle timeout, unknown, default
+
+					// link event job name
 					if val, ok := jobs[event.Name]; ok {
-						event.job = &val
+						event.job = val
 					} else {
-						log.Printf("on event %q: could not find job named %q\n", on, event.Name)
+						// TODO use logger with levels and log a warning
+						log.Printf("on event %q: could not find Job named %q\n", on, event.Name)
 					}
+
+					// link retry job
+					if !strings.EqualFold(event.Retry.Then, "") { // only attempt to link if retry job name is not empty
+						if val, ok := jobs[event.Retry.Then]; ok {
+							event.Retry.job = val
+						} else {
+							// TODO use logger with levels and log a warning
+							log.Printf("on event %q retry: could not find Job named %q\n", on, event.Retry.Then)
+						}
+					}
+
+				}
+				if j.IsSchedulable() {
+					log.Printf("found Job %q with interval %q", j.Name, j.Interval)
+					CronJobs = append(CronJobs, j)
 				}
 			}
 

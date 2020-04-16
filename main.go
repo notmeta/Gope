@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"html/template"
@@ -18,9 +19,11 @@ import (
 var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
 var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
 var Config []*JobConfig
+var CronJobs []Job
 
 func main() {
 	logFile := initialiseLogger()
+
 	defer logFile.Close()
 	defer Scheduler.Stop()
 
@@ -29,22 +32,20 @@ func main() {
 	log.Println("loading config")
 	LoadConfig()
 
-	//log.Printf("Initialising Gope for %s", Config.Title)
-	//log.Printf("Description: %s", Config.Description)
+	log.Println("registering jobs with scheduler")
+	RegisterJobs()
+
+	if len(Config) > 0 {
+		Scheduler.Start()
+	} else {
+		log.Println("No tasks to register, holding off starting the Scheduler")
+	}
 
 	log.Println("launching panel routine")
 	go panel()
 
-	//RegisterTasks(Config)
-	//
-	//if len(Config.Tasks) > 0 {
-	//	Scheduler.Start()
-	//} else {
-	//	log.Println("No tasks to register, holding off starting the Scheduler")
-	//}
-
 	// Wait for a CTRL-C
-	log.Printf(`Now running. Press CTRL-C to exit.`)
+	log.Printf("now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
@@ -62,52 +63,44 @@ func initialiseLogger() (file *os.File) {
 	return
 }
 
-func RegisterJobs(config *JobConfig) {
-	//successfulRegisters := 0
-	//failedRegisters := 0
+func RegisterJobs() {
+	successfulRegisters := 0
+	failedRegisters := 0
 
-	for _, job := range config.Jobs {
+	for _, cfg := range Config {
+		for index := range cfg.Jobs {
+			job := &cfg.Jobs[index]
 
-		fmt.Println(job.Name)
+			if !job.IsSchedulable() {
+				continue
+			}
+
+			// default values so they cannot be set in the config file
+			job.LastExitCode = -1
+			job.LastRunTime = nil
+
+			id, err := Scheduler.AddFunc(job.Interval, func() {
+				job.Execute()
+
+				t := time.Now()
+				job.LastRunTime = &t
+			})
+
+			if err != nil {
+				failedRegisters++
+				log.Println(errors.New(fmt.Sprintf("failed to register task: %s", err.Error())))
+			} else {
+				log.Printf("successfully registered task '%s' with interval '%s'; assigned id: %d", job.Name, job.Interval, id)
+				successfulRegisters++
+			}
+		}
 
 	}
 
-}
+	log.Printf("%d job(s) registered.\n", successfulRegisters)
+	log.Printf("%d job(s) failed to register.\n", failedRegisters)
 
-//func RegisterTasks(config *TaskConfig) {
-//	successfulRegisters := 0
-//	failedRegisters := 0
-//
-//	for name := range config.Tasks {
-//		taskName := name
-//		task := config.Tasks[name]
-//		task.LastExitCode = -1
-//
-//		config.Tasks[name] = task
-//
-//		id, err := Scheduler.AddFunc(task.Interval, func() {
-//			exit := task.Execute(taskName)
-//
-//			task.LastExitCode = exit
-//
-//			newTime := time.Now()
-//			task.LastRunTime = &newTime
-//
-//			config.Tasks[taskName] = task
-//		})
-//
-//		if err != nil {
-//			failedRegisters++
-//			log.Println(errors.New(fmt.Sprintf("failed to register task: %s", err.Error())))
-//		} else {
-//			log.Printf("Successfully registered task '%s' with interval '%s'; assigned id: %d", name, task.Interval, id)
-//			successfulRegisters++
-//		}
-//	}
-//
-//	log.Printf("%d task(s) registered.\n", successfulRegisters)
-//	log.Printf("%d task(s) failed to register.\n", failedRegisters)
-//}
+}
 
 func panel() {
 	var allFiles []string
