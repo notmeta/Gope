@@ -16,56 +16,38 @@ import (
 	"time"
 )
 
-var Scheduler = cron.New(cron.WithChain(SkipIfStillRunning()))
-var Config *TaskConfig
-
-func SkipIfStillRunning() cron.JobWrapper {
-	var ch = make(chan struct{}, 1)
-	ch <- struct{}{}
-	return func(j cron.Job) cron.Job {
-		return cron.FuncJob(func() {
-			select {
-			case v := <-ch:
-				ch <- v
-				j.Run()
-			default:
-				log.Println("skip")
-			}
-		})
-	}
-}
+var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
+var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
+var Config []*JobConfig
 
 func main() {
 	logFile := initialiseLogger()
-	defer logFile.Close()
 
+	defer logFile.Close()
 	defer Scheduler.Stop()
 
-	if config, err := LoadConfig("jobs.toml"); err != nil {
-		log.Fatal(err)
-	} else {
-		Config = config
-	}
+	log.Println("launching Gope")
 
-	log.Printf("Initialising Gope for %s", Config.Title)
-	log.Printf("Description: %s", Config.Description)
+	log.Println("loading config")
+	LoadConfig()
 
-	go panel()
+	log.Println("registering jobs with scheduler")
+	RegisterJobs()
 
-	RegisterTasks(Config)
-
-	if len(Config.Tasks) > 0 {
+	if len(Config) > 0 {
 		Scheduler.Start()
 	} else {
 		log.Println("No tasks to register, holding off starting the Scheduler")
 	}
 
+	log.Println("launching panel routine")
+	go panel()
+
 	// Wait for a CTRL-C
-	log.Printf(`Now running. Press CTRL-C to exit.`)
+	log.Printf("now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
-
 }
 
 func initialiseLogger() (file *os.File) {
@@ -80,39 +62,43 @@ func initialiseLogger() (file *os.File) {
 	return
 }
 
-func RegisterTasks(config *TaskConfig) {
+func RegisterJobs() {
 	successfulRegisters := 0
 	failedRegisters := 0
 
-	for name := range config.Tasks {
-		taskName := name
-		task := config.Tasks[name]
-		task.LastExitCode = -1
+	for _, cfg := range Config {
+		for index := range cfg.Jobs {
+			job := &cfg.Jobs[index]
 
-		config.Tasks[name] = task
+			if !job.IsSchedulable() {
+				continue
+			}
 
-		id, err := Scheduler.AddFunc(task.Interval, func() {
-			exit := task.Execute(taskName)
+			// default values so they cannot be set in the config file
+			job.LastExitCode = -1
+			job.LastRunTime = nil
 
-			task.LastExitCode = exit
+			id, err := Scheduler.AddFunc(job.Interval, func() {
+				job.Execute()
 
-			newTime := time.Now()
-			task.LastRunTime = &newTime
+				t := time.Now()
+				job.LastRunTime = &t
+			})
 
-			config.Tasks[taskName] = task
-		})
-
-		if err != nil {
-			failedRegisters++
-			log.Println(errors.New(fmt.Sprintf("failed to register task: %s", err.Error())))
-		} else {
-			log.Printf("Successfully registered task '%s' with interval '%s'; assigned id: %d", name, task.Interval, id)
-			successfulRegisters++
+			if err != nil {
+				failedRegisters++
+				log.Println(errors.New(fmt.Sprintf("failed to register task: %s", err.Error())))
+			} else {
+				log.Printf("successfully registered task '%s' with interval '%s'; assigned id: %d", job.Name, job.Interval, id)
+				successfulRegisters++
+			}
 		}
+
 	}
 
-	log.Printf("%d task(s) registered.\n", successfulRegisters)
-	log.Printf("%d task(s) failed to register.\n", failedRegisters)
+	log.Printf("%d job(s) registered.\n", successfulRegisters)
+	log.Printf("%d job(s) failed to register.\n", failedRegisters)
+
 }
 
 func panel() {

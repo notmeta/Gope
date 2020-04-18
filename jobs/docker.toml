@@ -1,0 +1,19 @@
+title = "Docker jobs"
+description = "Run some routine docker commands"
+
+[[job]]
+name = "check space"
+command = "df"
+interval = "* * * * *"
+timeout = 20
+
+on.timeout.code = 3 # not in diagram
+
+on.3.name = "clear disk space"
+on.3.retry.tries = 5
+on.3.retry.then = "disk space email"
+
+on.0.name = "check connection"
+on.default.name = "some job"
+
+
