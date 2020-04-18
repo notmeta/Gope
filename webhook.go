@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -32,6 +32,8 @@ func (wh CallableWebhook) execute() {
 }
 
 func decode() (wh *CallableWebhook, err error) {
+	var webhook CallableWebhook
+
 	file, err := os.Open("webhook.toml")
 
 	if err != nil {
@@ -41,7 +43,11 @@ func decode() (wh *CallableWebhook, err error) {
 	defer file.Close()
 
 	b, err := ioutil.ReadAll(file)
-	_, err = toml.Decode(string(b), &wh)
 
-	return
+	if err := toml.Unmarshal(b, &webhook); err != nil {
+		log.Fatal(err)
+		return wh, err
+	}
+
+	return &webhook, nil
 }
