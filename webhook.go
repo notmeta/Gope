@@ -22,8 +22,6 @@ type webhook struct {
 }
 
 func (wh CallableWebhook) execute() {
-	log.Printf("executing webhook '%s'\n", wh.Name)
-
 	_, err := http.Post(wh.Webhook.Url, wh.Webhook.ContentType, bytes.NewBuffer([]byte(wh.Webhook.Payload)))
 
 	if err != nil {
@@ -31,10 +29,8 @@ func (wh CallableWebhook) execute() {
 	}
 }
 
-func decode() (wh *CallableWebhook, err error) {
+func decodeWebhookFile(file *os.File) (wh *CallableWebhook, err error) {
 	var webhook CallableWebhook
-
-	file, err := os.Open("webhook.toml")
 
 	if err != nil {
 		return nil, err

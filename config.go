@@ -21,6 +21,11 @@ type JobConfig struct {
 const configFileSuffix = ".toml"
 
 func LoadConfig() {
+	loadWebhooks()
+	loadJobConfig()
+}
+
+func loadJobConfig() { //
 	err := filepath.Walk("jobs", func(path string, info os.FileInfo, err error) error {
 
 		if err != nil {
@@ -38,7 +43,7 @@ func LoadConfig() {
 			}
 			defer file.Close()
 
-			cfg, err := loadConfigFile(file)
+			cfg, err := decodeJobFile(file)
 			if err != nil {
 				return err
 			}
@@ -96,7 +101,7 @@ func LoadConfig() {
 
 }
 
-func loadConfigFile(file *os.File) (cfg *JobConfig, err error) {
+func decodeJobFile(file *os.File) (cfg *JobConfig, err error) {
 	var config JobConfig
 
 	b, _ := ioutil.ReadAll(file)
@@ -109,4 +114,39 @@ func loadConfigFile(file *os.File) (cfg *JobConfig, err error) {
 	config.fileName = file.Name()
 
 	return &config, nil
+}
+
+func loadWebhooks() {
+	err := filepath.Walk("webhooks", func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+			return err
+		}
+
+		if !info.IsDir() && strings.HasSuffix(path, configFileSuffix) {
+			file, err := os.Open(path)
+
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			wh, err := decodeWebhookFile(file)
+			if err != nil {
+				return err
+			}
+
+			Webhooks[strings.ToLower(wh.Name)] = wh
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("%d webhook(s) loaded\n", len(Webhooks))
+
 }

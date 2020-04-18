@@ -19,6 +19,7 @@ import (
 var CronLogger = cron.PrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
 var Scheduler = cron.New(cron.WithChain(cron.SkipIfStillRunning(CronLogger)))
 var Config []*JobConfig
+var Webhooks = make(map[string]*CallableWebhook)
 
 func main() {
 	logFile := initialiseLogger()
@@ -79,7 +80,7 @@ func RegisterJobs() {
 			job.LastRunTime = nil
 
 			id, err := Scheduler.AddFunc(job.Interval, func() {
-				job.Execute()
+				job.Execute(nil)
 
 				t := time.Now()
 				job.LastRunTime = &t

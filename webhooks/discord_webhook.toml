@@ -1,4 +1,4 @@
-name = "send discord webhook"
+name = "discord no error"
 
 [webhook]
 url = "https://canary.discordapp.com/api/webhooks/$var1/$var2"
