@@ -4,24 +4,22 @@ description = "Used to backup the database using the sql dump command"
 [[job]]
 name = "check space"
 command = "df"
-interval = "* * * * *"
+interval = "17 * * * *"
 timeout = 20
-
-on.timeout.code = 3 # not in diagram
+log = "checking space of the system"
 
 on.3.name = "clear disk space"
 on.3.retry.tries = 5
 on.3.retry.then = "disk space email"
 
 on.0.name = "check connection"
-on.default.name = "some job"
 
 
 [[job]]
 name = "clear disk space"
 command = "rm -r /etc/somedir/logs"
 timeout = 20
-interval = "1 * * * *"
+#interval = "1 * * * *"
 
 [[job]]
 name = "disk space email"
@@ -68,7 +66,7 @@ ${{stdout}}
 
 ${{stderr}}
 """
-webhook.name = "sdfg"
+webhook = "sdfg"
 
 
 [[job]]
