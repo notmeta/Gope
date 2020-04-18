@@ -70,11 +70,16 @@ func (j Job) Execute() {
 				log.Printf("job %q timed out, executing on.timeout", j.Name)
 				val.job.Execute()
 			}
-
 		} else {
 			exitCode := strconv.Itoa(int(output.ExitCode))
 			if val, ok := j.On[exitCode]; ok {
 				val.job.Execute()
+			} else {
+				if val, ok := j.On[Unknown]; ok {
+					log.Printf("no event found for exit code %d, executing on.unknown event\n", output.ExitCode)
+					val.job.Execute()
+				}
+				// !ok - no event found
 			}
 		}
 	}
