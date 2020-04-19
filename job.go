@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -72,8 +71,7 @@ func (j Job) Execute(previousOutput *CommandOutput) {
 				val.job.Execute(&output)
 			}
 		} else {
-			exitCode := strconv.Itoa(int(output.ExitCode))
-			if val, ok := j.On[exitCode]; ok {
+			if val, ok := j.On[*output.ExitStr()]; ok {
 				val.job.Execute(&output)
 			} else {
 				if val, ok := j.On[Unknown]; ok {
