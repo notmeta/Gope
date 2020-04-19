@@ -44,18 +44,22 @@ const (
 	Default = "default"
 )
 
+func isBlank(input *string) bool {
+	return strings.EqualFold(strings.TrimSpace(*input), "")
+}
+
 func (j Job) IsSchedulable() bool {
-	return !strings.EqualFold(j.Interval, "")
+	return !isBlank(&j.Interval)
 }
 
 func (j Job) Execute(previousOutput *CommandOutput) {
 	// log statement
-	if !strings.EqualFold(j.Log, "") {
+	if !isBlank(&j.Log) {
 		log.Println(j.Log)
 	}
 
 	// command statement
-	if !strings.EqualFold(j.Command, "") {
+	if !isBlank(&j.Command) {
 		output, err := ExecuteCommand(j.Command, j.Timeout)
 
 		if &output != nil {
@@ -83,7 +87,8 @@ func (j Job) Execute(previousOutput *CommandOutput) {
 		}
 	}
 
-	if !strings.EqualFold(j.Webhook, "") {
+	// webhook statement
+	if !isBlank(&j.Webhook) {
 		webhookName := strings.ToLower(j.Webhook)
 		if val, ok := Webhooks[webhookName]; ok {
 			log.Printf("executing webhook %q\n", webhookName)

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -19,6 +20,25 @@ type CommandOutput struct {
 func (o CommandOutput) ExitStr() *string {
 	exit := strconv.Itoa(int(o.ExitCode))
 	return &exit
+}
+
+func (o *CommandOutput) ReplaceVars(source *string) {
+	if o == nil {
+		return
+	}
+
+	replaced := replaceVariable(stdOutTemplate, &o.StdOut, source)
+	replaced = replaceVariable(stdErrTemplate, &o.StdErr, &replaced)
+	replaced = replaceVariable(exitCodeTemplate, o.ExitStr(), &replaced)
+
+	*source = replaced
+}
+
+func replaceVariable(variable string, toReplace *string, source *string) string {
+	quoted := strconv.Quote(*toReplace) // escape all escape-chars
+	quoted = quoted[1 : len(quoted)-1]  // remove the quotes the previous function added
+
+	return strings.ReplaceAll(*source, variable, quoted)
 }
 
 type TimeoutError struct {

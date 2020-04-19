@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/pelletier/go-toml"
 	"io/ioutil"
 	"log"
@@ -23,17 +22,12 @@ type webhook struct {
 
 func (wh CallableWebhook) execute(prevOutput *CommandOutput) {
 	payload := wh.Webhook.Payload
-
-	if prevOutput != nil {
-		payload = replaceVariable(stdOutTemplate, &prevOutput.StdOut, &payload)
-		payload = replaceVariable(stdErrTemplate, &prevOutput.StdErr, &payload)
-		payload = replaceVariable(exitCodeTemplate, prevOutput.ExitStr(), &payload)
-	}
+	prevOutput.ReplaceVars(&payload)
 
 	_, err := http.Post(wh.Webhook.Url, wh.Webhook.ContentType, bytes.NewBuffer([]byte(payload)))
 
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("error when executing webhook %s: %s\n", wh.Name, err)
 	}
 }
 
