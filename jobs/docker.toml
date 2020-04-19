@@ -1,0 +1,34 @@
+title = "Docker jobs"
+description = "Run some routine docker commands"
+
+[[job]]
+name = "check processes"
+command = "docker ps"
+interval = "* * * * *"
+timeout = 5
+log = "Checking docker processes"
+
+#on.timeout.name = "timeout error"
+#
+#on.0.name = "no error"
+#on.1.name = "report error"
+#on.4.name = "no error"
+
+on.unknown.name = "unknown error"
+
+[[job]]
+name = "report error"
+log = "there was an error!"
+
+[[job]]
+name = "no error"
+log = "process finished fine!"
+
+[[job]]
+name = "timeout error"
+log = "help, we timed out!"
+
+[[job]]
+name = "unknown error"
+log = "encountered unknown error - help!"
+webhook = "basic discord report"
