@@ -3,16 +3,16 @@ description = "Run some routine docker commands"
 
 [[job]]
 name = "check processes"
-command = "docker ps && exit 4"
+command = "docker ps"
 interval = "* * * * *"
 timeout = 5
 log = "Checking docker processes"
 
-on.timeout.name = "timeout error"
-
-on.0.name = "no error"
-on.1.name = "report error"
-on.4.name = "no error"
+#on.timeout.name = "timeout error"
+#
+#on.0.name = "no error"
+#on.1.name = "report error"
+#on.4.name = "no error"
 
 on.unknown.name = "unknown error"
 
@@ -23,7 +23,6 @@ log = "there was an error!"
 [[job]]
 name = "no error"
 log = "process finished fine!"
-#webhook = "discord no error" # TODO pass std/err/exit to variables
 
 [[job]]
 name = "timeout error"
@@ -32,3 +31,4 @@ log = "help, we timed out!"
 [[job]]
 name = "unknown error"
 log = "encountered unknown error - help!"
+webhook = "basic discord report"

@@ -89,7 +89,7 @@ func (j Job) Execute(previousOutput *CommandOutput) {
 		webhookName := strings.ToLower(j.Webhook)
 		if val, ok := Webhooks[webhookName]; ok {
 			log.Printf("executing webhook %q\n", webhookName)
-			val.execute()
+			val.execute(previousOutput)
 		}
 	}
 

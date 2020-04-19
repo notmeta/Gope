@@ -21,8 +21,16 @@ type webhook struct {
 	ContentType string `toml:"content-type"`
 }
 
-func (wh CallableWebhook) execute() {
-	_, err := http.Post(wh.Webhook.Url, wh.Webhook.ContentType, bytes.NewBuffer([]byte(wh.Webhook.Payload)))
+func (wh CallableWebhook) execute(prevOutput *CommandOutput) {
+	payload := wh.Webhook.Payload
+
+	if prevOutput != nil {
+		payload = replaceVariable(stdOutTemplate, &prevOutput.StdOut, &payload)
+		payload = replaceVariable(stdErrTemplate, &prevOutput.StdErr, &payload)
+		payload = replaceVariable(exitCodeTemplate, prevOutput.ExitStr(), &payload)
+	}
+
+	_, err := http.Post(wh.Webhook.Url, wh.Webhook.ContentType, bytes.NewBuffer([]byte(payload)))
 
 	if err != nil {
 		fmt.Println(err)

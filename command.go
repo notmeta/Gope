@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -13,6 +14,11 @@ type CommandOutput struct {
 	StdOut   string
 	StdErr   string
 	ExitCode byte
+}
+
+func (o CommandOutput) ExitStr() *string {
+	exit := strconv.Itoa(int(o.ExitCode))
+	return &exit
 }
 
 type TimeoutError struct {

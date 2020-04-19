@@ -20,6 +20,12 @@ type JobConfig struct {
 
 const configFileSuffix = ".toml"
 
+const (
+	stdOutTemplate   = "${out}"
+	stdErrTemplate   = "${err}"
+	exitCodeTemplate = "${exit}"
+)
+
 func LoadConfig() {
 	loadWebhooks()
 	loadJobConfig()
