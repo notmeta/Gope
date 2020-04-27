@@ -1,0 +1,46 @@
+language: go
+
+notifications:
+  email: false
+
+matrix:
+  include:
+    # "1.x" always refers to the latest Go version, inc. the patch release.
+    # e.g. "1.x" is 1.11 until 1.11.1 is available.
+    - go: 1.x
+      env: LATEST=true
+    - go: 1.11.x
+    - go: 1.12.x
+    - go: 1.13.x
+    - go: tip
+  allow_failures:
+    - go: tip
+
+before_install:
+  # gox simplifies building for multiple architectures
+  - go get github.com/mitchellh/gox
+
+install:
+  - # skip
+
+script:
+  - go get -t -v ./...
+  - diff -u <(echo -n) <(gofmt -d .)
+  - go vet $(go list ./... | grep -v /vendor/)
+  - go test -v -race ./...
+  # Only build binaries from the latest Go release.
+  - if [ "${LATEST}" = "true" ]; then gox -os="linux darwin" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...; fi
+
+deploy:
+  provider: releases
+  api_key:
+    secure: R76qT0G++2C1LU3kb45U1KQ7YkY/8PM4IrhPm8Q2dZsJfdbuvbgeHZ9qVBA1fLbqnp4cgHWmmvR0qSijYqtpfwl6vpZQfveUFRDmdtgMaenbe0cw4NRRhh8NO4WGLWhRJmwmfs0urrcVI7gZUfsMqKccffhIDVCRPDQlhMSfn587jri9KvXRMn8XqpVSCpHMs4h3+VR2K3h48WH9kjestnXZkiOCoSgCrDUT6QbYfqPeVrFZ7hW28vYTSOYciAkIvoubATwwE4qS7ne3oe/8lyPJ5iZ9mkFuJJI5HZBEffnksdkXDkVQa0HivSVf3i0f9wL7AiEnSqCOgSzGf+CwLQIM1J0jsUveCLnZuz8bBsscMPxD7xgGoJD7tRC/Iw598ccXw7Wg/DpZiKfZEfGwtMbC0lhKx5hU9zh4rERVyBA7vwi0Wl/uMOEhv5FbId/1DogsTHxucfGo2RDIz3GYXVDVKHs34x6WGo2h6eBIQEsRq2GGtG9ILbZOqlt2gj1a66aNMcAtrAKPjEfhSo6ApydDpqpGznxdeXKrrQoK6Nk3iwrCp2wQk3yukK1WeoriE08jUuUZxHr5lu+vvy6xrp4PtBZWbU3YAxtKmtkNNPdpZHIGIkLjWCY48zIC8JMgSXDT9KyL8LwicznU5+vHdNeu4/PGtxHBD5Suo9T05IQ=
+  file_glob: true
+  file:
+    # The names of the binaries to output, based on the -output template passed to gox.
+    - Gope_*
+  on:
+    repo: notmeta/Gope
+    tags: true
+    condition: $LATEST = true
+  skip_cleanup: true
