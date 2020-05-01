@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
@@ -50,7 +51,7 @@ func (e *TimeoutError) Error() string {
 	return fmt.Sprintf("gope timeout: command %q timed out with duration of %d", e.command, e.timeoutDuration)
 }
 
-// https://stackoverflow.com/a/40770011
+// boilerplate based on https://stackoverflow.com/a/40770011 and subsequent answers
 func ExecuteCommand(command string, timeout int) (out CommandOutput, err error) {
 	var outbuf, errbuf bytes.Buffer
 
@@ -95,19 +96,9 @@ func ExecuteCommand(command string, timeout int) (out CommandOutput, err error) 
 
 	if err != nil {
 		// try to get the exit code
-		if exitError, ok := err.(*exec.ExitError); ok {
-			ws := exitError.Sys().(syscall.WaitStatus)
-			exitCode = byte(ws.ExitStatus())
-		} else {
-			// This will happen (in OSX) if `name` is not available in $PATH,
-			// in this situation, exit code could not be get, and stderr will be
-			// empty string very likely, so we use the default fail code, and format err
-			// to string and set to stderr
-			log.Printf("Could not get exit code for failed program: %v", command)
-			exitCode = 0
-			if stderr == "" {
-				stderr = err.Error()
-			}
+		var e *exec.ExitError
+		if errors.As(err, &e) {
+			exitCode = byte(e.ExitCode())
 		}
 	} else {
 		// success, exitCode should be 0 if go is ok
