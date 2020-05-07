@@ -117,6 +117,7 @@ func panel() {
 
 	templates := template.Must(template.ParseFiles(allFiles...))
 
+	http.Handle("/ui/", http.StripPrefix("/ui/", http.FileServer(http.Dir("./ui/"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		err := templates.ExecuteTemplate(w, "index.html", template.FuncMap{
 			"time":   time.Now(),
